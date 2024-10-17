@@ -1,0 +1,84 @@
+#variable    gn           string 8
+#variable    vol_frac     string 0.02
+#variable    aspect_ratio string 10
+#variable    charge       string 0.0
+variable     title string gn_${gn}_vf_${vol_frac}_ar_${aspect_ratio}
+variable     temp  equal  293
+#variable    fstd  equal  4.0
+
+variable     out_name string ${title}_q_${charge}_fstd_${fstd}
+log ${out_name}.equ.log
+
+units        nano
+boundary     p p p
+atom_style   full
+dimension    3
+newton       on
+comm_modify  vel yes
+bond_style   harmonic
+angle_style  harmonic
+special_bonds charmm
+
+read_data    ../3.1.gen_lmp_data/${title}.data
+
+neighbor  1.0 bin
+neigh_modify every 1 delay 0 one 1000
+
+mass 1 0.1
+set type 1 charge ${charge}
+
+bond_coeff   1  10000  4.0
+angle_coeff  1  10000  180.0
+
+pair_style       lj/cut/coul/cut 32.0 32.0
+
+pair_coeff   1 1  657  3.56  32.0 # 41 mJ/m^2
+
+timestep     1e-4
+run_style    verlet
+
+#velocity all create 1 68768932
+
+compute  cluster     all aggregate/atom 5.0
+variable cluster_head atom "c_cluster == id"
+compute  cluster_num all reduce sum v_cluster_head
+compute  gyration    all gyration
+
+thermo_style custom step time temp press c_cluster_num c_gyration
+thermo       1000
+
+dump    1 all atom 100000 ${out_name}.lammpstrj
+
+variable all_fx atom "(step*dt+1)/(time+1)*normal(0.0, v_fstd*69.5, 1)"
+variable all_fy atom "(step*dt+1)/(time+1)*normal(0.0, v_fstd*69.5, 5)"
+variable all_fz atom "(step*dt+1)/(time+1)*normal(0.0, v_fstd*69.5, 9)"
+
+#compute 1 all reduce sum v_all_fx
+#thermo_style custom step time temp press c_1
+
+#fix 0 all momentum 1 linear 1 1 1 
+
+minimize 0.1 0.1 10000 100000
+
+fix 1 all nve
+#fix 2 all viscous 1.76
+fix 2 all langevin 300 300 5.68e-2 123
+#fix 2 all temp/rescale 100 300 300 0.1 1.0
+fix 3 all addforce v_all_fx v_all_fy v_all_fz
+#fix 4 all gravity  1e-8 vector 0 0 -1
+fix 5 all ave/time 1 1 100 c_cluster_num c_gyration file ${out_name}.cluster_gyration
+
+run 100000
+
+variable     loop_i loop 290
+label        loop
+
+variable     cluster_num equal c_cluster_num
+if "${cluster_num} < 20" then "jump SELF break"
+run          10000
+
+next loop_i
+jump SELF loop
+
+label break
+write_data        ${out_name}.equ.data
