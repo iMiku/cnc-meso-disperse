@@ -1,0 +1,72 @@
+variable     title string cg_cnc1_wat20250
+variable     temp  equal  293
+variable     Rc    equal  8.43
+variable     Gamma equal  0.11
+#variable     Aij   equal  2.982
+
+log ${title}_Aij_${Aij}.equ.log
+
+units        real
+boundary     p p p
+atom_style   full
+dimension    3
+newton       on
+comm_modify  vel yes
+
+read_data    ${title}.data
+
+mass 1 180.2
+mass 2 18.02
+
+pair_style       dpd ${temp} ${Rc} 3854262
+
+pair_coeff   2 2 1.727  ${Gamma}  ${Rc}
+pair_coeff   1 2 ${Aij} ${Gamma}  ${Rc}
+pair_coeff   1 1 0.0    0.0       ${Rc}
+
+timestep     1
+run_style    verlet
+
+velocity all create ${temp} 68768932
+
+group  cnc  type 1
+group  wat  type 2
+
+region upp block INF INF INF INF  20. INF
+region mid block INF INF INF INF -20. 20.
+region btm block INF INF INF INF INF -20.
+
+group  upp region upp
+group  mid region mid
+group  btm region btm
+
+group  cnc_upp intersect cnc upp
+group  cnc_mid intersect cnc mid
+group  cnc_btm intersect cnc btm
+
+variable cnc_upp_fx equal fcm(cnc_upp,x)
+variable cnc_upp_fy equal fcm(cnc_upp,y)
+variable cnc_upp_fz equal fcm(cnc_upp,z)
+variable cnc_mid_fx equal fcm(cnc_mid,x)
+variable cnc_mid_fy equal fcm(cnc_mid,y)
+variable cnc_mid_fz equal fcm(cnc_mid,z)
+variable cnc_btm_fx equal fcm(cnc_btm,x)
+variable cnc_btm_fy equal fcm(cnc_btm,y)
+variable cnc_btm_fz equal fcm(cnc_btm,z)
+
+thermo_style custom step time temp press v_cnc_upp_fx
+thermo       100
+
+#dump    1 all atom 500 ${title}.lammpstrj
+
+fix   out_force all ave/time 1 100 100 v_cnc_upp_fx v_cnc_upp_fy v_cnc_upp_fz &
+                                       v_cnc_mid_fx v_cnc_mid_fy v_cnc_mid_fz &
+                                       v_cnc_btm_fx v_cnc_btm_fy v_cnc_btm_fz &
+                                       file force_Aij_${Aij}
+
+fix 1 wat nvt temp 300 300 100
+#fix 2 wat temp/rescale 
+
+run          1000000
+
+
