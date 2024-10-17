@@ -1,0 +1,19 @@
+#
+# A mixture of water and urea
+#
+
+tolerance 2.0
+filetype pdb
+output cnc1+water27000.pdb
+
+structure crystal.pdb
+  number 1
+  center
+  fixed 0. 0. 0. 0. 0. 0.
+end structure
+
+structure water.pdb 
+  number 27000 
+  inside box -40. -40. -80. 40. 40. 80. 
+end structure
+
