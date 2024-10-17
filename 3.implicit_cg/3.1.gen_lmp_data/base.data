@@ -1,0 +1,18 @@
+# LAMMPS data file written by Ovito 3.8.4
+
+1 atoms
+0 bonds
+1 atom types
+1 bond types
+
+0.0 1.0 xlo xhi
+0.0 1.0 ylo yhi
+0.0 1.0 zlo zhi
+
+Masses
+
+1 1.0
+
+Atoms  # full
+
+1 1 1 0.0 0.00 0.00 0.00
