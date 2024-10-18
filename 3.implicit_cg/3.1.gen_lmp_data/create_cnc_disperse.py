@@ -20,7 +20,7 @@ def rotation_matrix_from_vectors(vec1, vec2):
 
 def generate_random_rotation_mat():
     vec1 = np.array([0, 0, 1])
-    vec2 = np.random.random(3)
+    vec2 = np.random.random(3) - 0.5
     return rotation_matrix_from_vectors(vec1, vec2)
 
 def generate_linear_cncs(volume_frac=0.01, aspect_ratio=10, cnc_grid_num=3):
